@@ -17,7 +17,11 @@ def extract_emotion(obj, emotion):
     Returns:
         float: The score of the specified emotion.
     """
-    return obj["emotionPredictions"][0]["emotion"][emotion]
+    if obj is not None:
+        result = obj["emotionPredictions"][0]["emotion"][emotion]
+    else:
+        result = None
+    return result
 
 def emotion_detector(text_to_analyse):
     """
@@ -30,18 +34,26 @@ def emotion_detector(text_to_analyse):
         dict: A dictionary containing scores for each emotion (anger, disgust, fear, joy, sadness)
               and the dominant emotion. If the API call fails, all values are set to None.
     """
-    url = 'https://sn-watson-emotion.labs.skills.network/v1/watson."\
-    + "runtime.nlp.v1/NlpService/EmotionPredict'
+    url = 'https://sn-watson-emotion.labs.skills.network/v1/watson.' \
+    + 'runtime.nlp.v1/NlpService/EmotionPredict'
     headers = {"grpc-metadata-mm-model-id": "emotion_aggregated-workflow_lang_en_stock"}
     my_object = { "raw_document": { "text": text_to_analyse } }
     res = requests.post(url, json=my_object, headers=headers)
 
     d_obj = json.loads(res.text)
 
+    print(d_obj)
+
     if res.status_code == 200:
         dominant_emotion = max(d_obj["emotionPredictions"][0]["emotion"],
                                 key=d_obj["emotionPredictions"][0]["emotion"].get)
-        res_obj = {
+                
+
+
+    elif res.status_code == 400:
+        dominant_emotion = None
+
+    res_obj = {
             "anger": extract_emotion(d_obj, "anger"),
             "disgust": extract_emotion(d_obj, "disgust"),
             "fear": extract_emotion(d_obj, "fear"),
@@ -50,14 +62,5 @@ def emotion_detector(text_to_analyse):
             "dominant_emotion": dominant_emotion
         }
 
-    elif res.status_code == 400:
-        res_obj = {
-            "anger": None,
-            "disgust": None,
-            "fear": None,
-            "joy": None,
-            "sadness": None,
-            "dominant_emotion": None,
-        }
-
+     
     return res_obj
